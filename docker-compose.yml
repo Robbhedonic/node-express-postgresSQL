@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: game-world_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: game-world
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: game-data
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: game-world_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8084:80"
+    depends_on:
+      - postgres
+volumes:
+  postgres_data:
