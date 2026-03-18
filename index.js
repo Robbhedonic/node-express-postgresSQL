@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
 res.send('Welcome to the Game World API!');
 });
 
-// Task 1: List all players, games and scores
+// task 1: List all players, games and scores
 app.get('/players-scores', async (req, res) => {
 try {
 const query = `
@@ -37,6 +37,50 @@ const result = await pool.query(query);
 res.json(result.rows);
 } catch (error) {
 console.error('Error in /players-scores:', error.message);
+res.status(500).json({ error: 'Internal server error' });
+}
+});
+
+// task 2: Top 3 players by total score /top-players
+app.get('/top-players', async (req, res) => {
+try {
+const query = `
+SELECT
+    p.name AS player_name,
+    SUM(s.score) AS total_score
+FROM players p
+JOIN scores s ON p.id = s.player_id
+GROUP BY p.id, p.name
+ORDER BY total_score DESC
+LIMIT 3;
+`;
+
+const result = await pool.query(query);
+res.json(result.rows);
+} catch (error) {
+console.error('Error in /top-players:', error.message);
+res.status(500).json({ error: 'Internal server error' });
+}
+});
+
+// task 3: Players who have not played any games /inactive-players
+app.get('/inactive-players', async (req, res) => {
+try {
+const query = `
+SELECT
+    p.name AS player_name,
+    p.email,
+    p.created_at
+FROM players p
+LEFT JOIN scores s ON p.id = s.player_id
+WHERE s.id IS NULL
+ORDER BY p.name;
+`;
+
+const result = await pool.query(query);
+res.json(result.rows);
+} catch (error) {
+console.error('Error in /inactive-players:', error.message);
 res.status(500).json({ error: 'Internal server error' });
 }
 });
