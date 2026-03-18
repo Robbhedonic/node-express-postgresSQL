@@ -130,3 +130,49 @@ app.get('/recent-players', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// bonus: favorite game per player (
+app.get('/favorite-games', async (req, res) => {
+  try {
+    const query = `
+      WITH game_counts AS (
+        SELECT
+          p.id AS player_id,
+          p.name AS player_name,
+          g.id AS game_id,
+          g.title AS game_title,
+          COUNT(*) AS times_played
+        FROM players p
+        JOIN scores s ON p.id = s.player_id
+        JOIN games g ON g.id = s.game_id
+        GROUP BY p.id, p.name, g.id, g.title
+      ),
+      ranked AS (
+        SELECT
+          player_id,
+          player_name,
+          game_id,
+          game_title,
+          times_played,
+          ROW_NUMBER() OVER (
+            PARTITION BY player_id
+            ORDER BY times_played DESC, game_title ASC
+          ) AS rn
+        FROM game_counts
+      )
+      SELECT
+        player_name,
+        game_title AS favorite_game,
+        times_played
+      FROM ranked
+      WHERE rn = 1
+      ORDER BY player_name;
+    `;
+
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error in /favorite-games:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
